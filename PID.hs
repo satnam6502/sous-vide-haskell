@@ -18,8 +18,8 @@ therm = "/sys/bus/w1/devices/28-000005302a0e/w1_slave"
 waterTherm = "/sys/bus/w1/devices/28-0000052f6c1b/w1_slave"
 
 target :: Float
-target = 56.5 -- Lamb
--- target = 52.0 -- Vension.
+-- target = 56.5 -- Lamb
+target = 52.0 -- Vension.
 -- target = 45.0 -- Salmon. About 25 minutes.
 
 readTemp :: IO Float
@@ -30,8 +30,8 @@ readTemp
            temp = read (drop 2 (last (words (contentLines!!1)))) / 1000
        return temp
 
-pid :: Float -> Float -> Float -> Float -> Integer -> Bool -> Float -> Float -> Float -> IO ()
-pid p i d sp begin heating u_1 temp_1 temp_2
+pid :: Float -> Float -> Float -> Float -> Integer -> (Bool, Float, Float, Float) -> IO ()
+pid p i d sp begin (heating, u_1, temp_1, temp_2)
   = do cpuTime <- getCPUTime
        t <- getCurrentTime
        -- putStrLn (show (utctDayTime t))
@@ -41,7 +41,7 @@ pid p i d sp begin heating u_1 temp_1 temp_2
        temp <- readTemp
        -- Ignore spikes from bad readings and interference.
        when (temp < 0.0 || temp > 100.0) $
-          pid p i d sp begin heating u_1 temp temp_1
+          pid p i d sp begin (heating, u_1, temp, temp_1)
        now <- getTime
        let delta = abs (fromIntegral (now - start) / 10^7) -- Duration of this sample.
            t = (fromIntegral (now - begin)) / 10^7 -- Time since start of execution.
@@ -51,17 +51,17 @@ pid p i d sp begin heating u_1 temp_1 temp_2
                       i * delta * error -
                       d / delta * (temp - 2 * temp_1 + temp_2)
            u = max 0.0 (min 100.0 u') -- Prevent windup
-       putStrLn (show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\t" ++ show now)
+       putStrLn (show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\t" ++ show now ++ "\tdelta = " ++ show delta)
        system ("echo \"" ++ show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\" >> pid.txt")
        when (heating && temp >= u) $
          do putStrLn "OFF"
             system "echo \"0\" > /sys/class/gpio/gpio17/value"
-            pid p i d sp begin False u temp temp_1
+            pid p i d sp begin (False, u, temp, temp_1)
        when (not heating && temp < u) $
          do putStrLn "ON"
             system "echo \"1\" > /sys/class/gpio/gpio17/value"
-            pid p i d sp begin True u temp temp_1
-       pid p i d sp begin heating u temp temp_1       
+            pid p i d sp begin (True, u, temp, temp_1)
+       pid p i d sp begin (heating, u, temp, temp_1)       
        
 -- The main program reset the log file, initializes the       
 -- the temperature sensor I/O and the GPIO for controlling
@@ -78,4 +78,4 @@ main
        system "modprobe w1-therm" -- Setup the driver for reading the temperature.
        start <- getCPUTime -- Get the start time.
        temp <- readTemp -- Read the initial temperature.
-       pid 1 1  1 target start False temp temp temp
+       pid 1 1  1 target start (False, temp, temp, temp)
