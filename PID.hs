@@ -5,30 +5,13 @@ import System.CPUTime
 import Data.Time.Clock
 import Control.Concurrent
 import Control.Monad
-import Foreign.C 
-
-foreign import ccall "clockgettime" clockgettime :: IO CLong
- 
-getTime :: IO Integer                                                    
-getTime
-  = do t <- clockgettime
-       return (fromIntegral t)
-                                                    
-therm = "/sys/bus/w1/devices/28-000005302a0e/w1_slave"
-waterTherm = "/sys/bus/w1/devices/28-0000052f6c1b/w1_slave"
+import GetTime                                      
+import Thermomoter
 
 target :: Float
 -- target = 56.5 -- Lamb
 target = 52.0 -- Vension.
 -- target = 45.0 -- Salmon. About 25 minutes.
-
-readTemp :: IO Float
-readTemp
-  = do system ("cat " ++ waterTherm ++ " > sample.txt")
-       contents <- readFile "sample.txt"
-       let contentLines = lines contents
-           temp = read (drop 2 (last (words (contentLines!!1)))) / 1000
-       return temp
        
 pid :: Float -> Float -> Float -> Float -> Integer -> (Bool, Float, Float, Float) -> IO ()
 pid p i d sp begin (heating, u_1, temp_1, temp_2)
@@ -67,8 +50,7 @@ pid p i d sp begin (heating, u_1, temp_1, temp_2)
 -- the PID control process is kicked off.
 main :: IO ()
 main  
-  = do system "echo > pid.txt" -- Reset the log file.
-       system "echo \"17\" > /sys/class/gpio/export" -- Set GPIO 17 for output.
+  = do system "echo \"17\" > /sys/class/gpio/export" -- Set GPIO 17 for output.
        system "echo \"out\" > /sys/class/gpio/gpio17/direction"
        system "echo \"0\" > /sys/class/gpio/gpio17/value" -- Set GPIO 17 to 0 (relay off).
        system "modprobe w1-gpio" -- Initialize the temperature sensor GPIO.
