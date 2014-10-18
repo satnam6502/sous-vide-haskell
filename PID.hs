@@ -29,15 +29,13 @@ readTemp
        let contentLines = lines contents
            temp = read (drop 2 (last (words (contentLines!!1)))) / 1000
        return temp
-
+       
 pid :: Float -> Float -> Float -> Float -> Integer -> (Bool, Float, Float, Float) -> IO ()
 pid p i d sp begin (heating, u_1, temp_1, temp_2)
   = do cpuTime <- getCPUTime
-       t <- getCurrentTime
-       -- putStrLn (show (utctDayTime t))
        let elapsed = (cpuTime - begin) `div` 10^9
        start <- getTime
-       threadDelay 1000000
+       threadDelay 1000000 -- Wait for approximately a second.
        temp <- readTemp
        -- Ignore spikes from bad readings and interference.
        when (temp < 0.0 || temp > 100.0) $
