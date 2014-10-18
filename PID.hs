@@ -50,7 +50,6 @@ pid p i d sp begin (heating, u_1, temp_1, temp_2)
                       d / delta * (temp - 2 * temp_1 + temp_2)
            u = max 0.0 (min 100.0 u') -- Prevent windup
        putStrLn (show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\t" ++ show now ++ "\tdelta = " ++ show delta)
-       system ("echo \"" ++ show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\" >> pid.txt")
        when (heating && temp >= u) $
          do putStrLn "OFF"
             system "echo \"0\" > /sys/class/gpio/gpio17/value"
