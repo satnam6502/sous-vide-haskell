@@ -6,6 +6,7 @@ import Data.Time.Clock
 import Control.Concurrent
 import Control.Monad
 import GetTime                                      
+import Relay
 import Thermomoter
 
 target :: Float
@@ -34,12 +35,10 @@ pid p i d sp begin (heating, u_1, temp_1, temp_2)
            u = max 0.0 (min 100.0 u') -- Prevent windup
        putStrLn (show elapsed ++ "\t" ++ show temp ++ "\t" ++ show u ++ "\t" ++ show u' ++ "\t" ++ show now ++ "\tdelta = " ++ show delta)
        when (heating && temp >= u) $
-         do putStrLn "OFF"
-            system "echo \"0\" > /sys/class/gpio/gpio17/value"
+         do turnRelayOff
             pid p i d sp begin (False, u, temp, temp_1)
        when (not heating && temp < u) $
-         do putStrLn "ON"
-            system "echo \"1\" > /sys/class/gpio/gpio17/value"
+         do turnRelayOn
             pid p i d sp begin (True, u, temp, temp_1)
        pid p i d sp begin (heating, u, temp, temp_1)       
        
