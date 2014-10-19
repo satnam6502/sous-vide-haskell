@@ -9,10 +9,12 @@ import GetTime
 import Relay
 import Thermomoter
 
+-- Cooking chart.
+-- Lamb: 56.5
+-- Salmon: 45C for 25 minutes.
+-- Venison: 52C.
 target :: Float
--- target = 56.5 -- Lamb
 target = 52.0 -- Vension.
--- target = 45.0 -- Salmon. About 25 minutes.
        
 pid :: Float -> Float -> Float -> Float -> Integer -> (Bool, Float, Float, Float) -> IO ()
 pid p i d sp begin (heating, u_1, temp_1, temp_2)
